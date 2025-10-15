@@ -37,6 +37,7 @@
         "split_count": [36, 36],
         "sleep": true
     },
+
     "rgb_matrix": {
         "driver": "ws2812",
         "split_count": [36, 36],

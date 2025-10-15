@@ -47,73 +47,7 @@ const uint8_t PROGMEM encoder_hand_swap_config[NUM_ENCODERS] = {1, 0};
 
 #endif
 
-#ifdef OLED_ENABLE
-oled_rotation_t oled_init_kb(oled_rotation_t rotation) {
-    if (is_keyboard_master()) {
-        return OLED_ROTATION_270;
-    }
-    return rotation;
-}
 
-static void render_logo(void) {
-    static const char PROGMEM qmk_logo[] = {
-        0x80,0x81,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8a,0x8b,0x8c,0x8d,0x8e,0x8f,0x90,0x91,0x92,0x93,0x94,
-        0xa0,0xa1,0xa2,0xa3,0xa4,0xa5,0xa6,0xa7,0xa8,0xa9,0xaa,0xab,0xac,0xad,0xae,0xaf,0xb0,0xb1,0xb2,0xb3,0xb4,
-        0xc0,0xc1,0xc2,0xc3,0xc4,0xc5,0xc6,0xc7,0xc8,0xc9,0xca,0xcb,0xcc,0xcd,0xce,0xcf,0xd0,0xd1,0xd2,0xd3,0xd4,0
-    };
-    oled_write_P(qmk_logo, false);
-}
-
-void print_status_narrow(void) {
-    oled_write_P(PSTR("\n\n"), false);
-    switch (get_highest_layer(layer_state)) {
-        case 0:
-            oled_write_ln_P(PSTR("Qwrt"), false);
-            break;
-        case 1:
-            oled_write_ln_P(PSTR("Clmk"), false);
-            break;
-        default:
-            oled_write_P(PSTR("Mod\n"), false);
-            break;
-    }
-    oled_write_P(PSTR("\n\n"), false);
-    oled_write_ln_P(PSTR("LAYER"), false);
-    switch (get_highest_layer(layer_state)) {
-        case 0:
-        case 1:
-            oled_write_P(PSTR("Base\n"), false);
-            break;
-        case 2:
-            oled_write_P(PSTR("Lower"), false);
-            break;
-        case 3:
-            oled_write_P(PSTR("Raise"), false);
-            break;
-        case 4:
-            oled_write_P(PSTR("Adjust"), false);
-            break;
-        default:
-            oled_write_ln_P(PSTR("Undef"), false);
-    }
-    oled_write_P(PSTR("\n\n"), false);
-    led_t led_usb_state = host_keyboard_led_state();
-    oled_write_ln_P(PSTR("CPSLK"), led_usb_state.caps_lock);
-}
-
-bool oled_task_kb(void) {
-    if (!oled_task_user()) {
-        return false;
-    }
-    if (is_keyboard_master()) {
-        print_status_narrow();
-    } else {
-        render_logo();
-    }
-    return true;
-}
-
-#endif
 
 #ifdef ENCODER_ENABLE
 bool encoder_update_kb(uint8_t index, bool clockwise) {
@@ -135,4 +69,79 @@ bool encoder_update_kb(uint8_t index, bool clockwise) {
     }
     return true;
 }
+#endif
+
+#include "sofle.h"
+
+#ifdef RGB_MATRIX_ENABLE
+  // Physical Layout
+  // Columns
+  // 0  1  2  3  4  5  6  7  8  9  10 11 12 13
+  //                                           ROWS
+  // 12 13 22 23 32 33       33 32 23 22 13 12  0
+  //    02    03    04       04    03    02
+  // 11 14 21 24 31 34       34 31 24 21 14 11  1
+  //                01       01
+  // 10 15 20 25 30 35       35 30 25 20 15 10  2
+  //
+  // 09 16 19 26 29 36       36 29 26 19 16 09  3
+  //
+  //     08 17 18 27 28     28 27 18 17 08      4
+  //    07    06    05       05    06    07
+
+led_config_t g_led_config = {
+    {
+        // Left side key matrix to LED matrix
+        {  4,   5,  14,  15,  24,  25 },
+        {  3,   6,  13,  16,  23,  26 },
+        {  2,   7,  12,  17,  22,  27},
+        {  1,   8,  11,  18,  21,  28},
+        {  0,   9,  10,  19,  20,  NO_LED },
+
+        // Right side key matrix to LED matrix
+        {  40,  41,  50,  51,  60,  61},
+        {  39,  42,  49,  52,  59,  62},
+        {  38,  43,  48,  53,  58,  63},
+        {  37,  44,  47,  54,  57,  64},
+        {  36,  45,  46,  55,  56,  NO_LED }
+    },
+    {
+       // Left side underglow
+        {96, 40}, {16, 20}, {48, 10}, {80, 18}, {88, 60}, {56, 57}, {24,60},
+        // Left side Matrix
+        {32, 57}, { 0, 48}, { 0, 36}, { 0, 24}, { 0, 12},
+        {16, 12}, {16, 24}, {16, 36}, {16, 48}, {48, 55},
+        {64, 57}, {32, 45}, {32, 33}, {32, 21}, {32,  9},
+        {48,  7}, {48, 19}, {48, 31}, {48, 43}, {80, 59},
+        {96, 64}, {64, 45}, {64, 33}, {64, 21}, {64,  9},
+        {80, 10}, {80, 22}, {80, 34}, {80, 47},
+
+
+        // Right side underglow
+        {128, 40}, {208, 20}, {176, 10}, {144, 18}, {136, 60}, {168, 57}, {200,60},
+        // Right side Matrix
+        {192, 57}, {224, 48}, {224, 36}, {224, 24}, {224, 12},
+        {208, 12}, {208, 24}, {208, 36}, {208, 48}, {176, 55},
+        {160, 57}, {192, 45}, {192, 33}, {192, 21}, {192,  9},
+        {176,  7}, {176, 19}, {176, 31}, {176, 43}, {144, 59},
+        {128, 64}, {160, 45}, {160, 33}, {160, 21}, {160,  9},
+        {144, 10}, {144, 22}, {144, 34}, {144, 47},
+    },
+    {
+        LED_FLAG_NONE, LED_FLAG_UNDERGLOW, LED_FLAG_UNDERGLOW, LED_FLAG_UNDERGLOW, LED_FLAG_UNDERGLOW, LED_FLAG_UNDERGLOW, LED_FLAG_UNDERGLOW,
+        LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT,
+        LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT,
+        LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT,
+        LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT,
+        LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT,
+        LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT,
+        LED_FLAG_NONE, LED_FLAG_UNDERGLOW, LED_FLAG_UNDERGLOW, LED_FLAG_UNDERGLOW, LED_FLAG_UNDERGLOW, LED_FLAG_UNDERGLOW, LED_FLAG_UNDERGLOW,
+        LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT,
+        LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT,
+        LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT,
+        LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT,
+        LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT,
+        LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT, LED_FLAG_KEYLIGHT
+    }
+};
 #endif

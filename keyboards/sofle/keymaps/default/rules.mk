@@ -1,1 +1,6 @@
 TRI_LAYER_ENABLE = yes
+POINTING_DEVICE_ENABLE = yes
+POINTING_DEVICE_DRIVER = cirque_pinnacle_i2c
+
+
+CONVERT_TO=helios
